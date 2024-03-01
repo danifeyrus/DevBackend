@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"
+      integrity="sha512-NQfB/bDaB8kaSXF8E77JjhHG5PM6XVRxvHzkZiwl3ddWCEPBa23T76MuWSwAJdMGJnmQqM0VeY9kFszsrBEFrQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+      integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8="
+      crossorigin="anonymous"
+    ></script>
+    <script src="../js/main.js"></script>
+    <title>User</title>
+    <style>
+
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f7f7f7;
+  color: #333;
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  font-size: 24px;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+.users {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.user {
+  width: 200px;
+  height: 300px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.user img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 5px 5px 0 0;
+}
+
+#field-search {
+  width: 300px;
+  padding: 10px;
+  margin-top: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+#loadmore {
+  width: 150px;
+  padding: 10px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#loadmore:hover {
+  background-color: #0056b3;
+}
+
+    </style>
+  </head>
+  <body>
+    <h2>Users</h2>
+    <span id="foundusers" style="margin-bottom: 20px;">Total 0 users</span>
+    <div style="width: 200px; padding-bottom: 20px;">
+    </div>
+    <input placeholder="Search..." id="field-search"/>
+    <div class="users"></div>
+    <button style="width: 150px; margin-top: 10px" id="loadmore">
+      Load more
+    </button>
+  </body>
+
+  <script defer>
+    $(document).ready(async () => {
+
+        User.renderUserComponent();
+      const searchParams = new URLSearchParams(window.location.search);
+
+      $("#loadmore").click(() => {
+        nextPage();
+      });
+      $('#field-search').keyup(() => {
+        refetchPage();
+      })
+
+      nextPage()
+    });
+
+    const limit = 10;
+    let skip = 0;
+
+    async function refetchPage() {
+      skip = 0;
+      $(".users").html('');
+      await nextPage();
+    }
+    async function nextPage() {
+      try {
+        const response = await axios.post(`/users/page`, {
+          limit,
+          skip,
+          filter: {
+            search: $('#field-search').val()
+          },
+        }, {
+            headers: {
+              'Authentication': `JWT ${User.accessToken}`
+            }
+          });
+        const data = response.data.data;
+        const users = data.response;
+        if (users.length <= 0) {
+            $("#loadmore").remove();
+        }
+        skip += limit;
+        $('#foundusers').text(`Total ${data.totalDocuments} users`)
+        console.log(data);
+        for (const user of users) {
+          $(".users").html(
+            $(".users").html() +
+            `
+            <div class="user">
+                <a href="/users/editor.html?id=${user._id}"><h1>${user.login}</h1></a>
+                <div style="display: flex; flex-direction: column">
+                    <h3>${user.profile.fullname}</h3>
+                    <span>${user.profile.age} y.o.</span>
+                    <span>From ${user.profile.country}</span>
+                    <span>With us since ${user.createdAt}</span>
+                </div>
+            </div>
+            `
+          );
+        }
+      } catch (e) {
+        const errorCode = e?.response?.data?.code ?? "Unknown error";
+        const errorMessage = e?.response?.data?.message ?? "";
+        alert(`Failed. Error: ${errorCode} (${errorMessage})`);
+        console.error(e);
+      }
+    }
+  </script>
+</html>

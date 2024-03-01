@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New York Weekly Weather</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <canvas id="weatherChart" width="800" height="400"></canvas>
+
+  <script>
+    fetch('https://api.openweathermap.org/data/2.5/forecast?q=New%20York&appid=92ef8c99020c3d7362b57600882a4a58&units=metric')
+      .then(response => response.json())
+      .then(data => {
+        const dates = [];
+        const temperatures = [];
+
+      
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(data.list[i].dt * 1000); 
+          const temperature = data.list[i].main.temp;
+          dates.push(date.toLocaleDateString());
+          temperatures.push(temperature);
+        }
+
+   
+        const ctx = document.getElementById('weatherChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: dates,
+            datasets: [{
+              label: 'Temperature (°C)',
+              data: temperatures,
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              yAxes: [{
+                ticks: {
+                  beginAtZero: true
+                }
+              }]
+            }
+          }
+        });
+      })
+      .catch(error => console.error('Error fetching weather data:', error));
+  </script>
+</body>
+</html>
